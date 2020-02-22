@@ -82,7 +82,7 @@ class AlgoStrategy(gamelib.AlgoCore):
         self.build_reactive_defense(game_state)
 
         # If the turn is less than 5, stall with Scramblers and wait to see enemy's base
-        if game_state.turn_number < 5:
+        if game_state.turn_number < 0:
             self.stall_with_scramblers(game_state)
         else:
             # Now let's analyze the enemy base to see where their defenses are concentrated.
@@ -94,11 +94,18 @@ class AlgoStrategy(gamelib.AlgoCore):
 
                 # Only spawn Ping's every other turn
                 # Sending more at once is better since attacks can only hit a single ping at a time
-                if game_state.turn_number % 2 == 1:
-                    # To simplify we will just check sending them from back left and right
-                    ping_spawn_location_options = [[13, 0], [14, 0]]
-                    best_location = self.least_damage_spawn_location(game_state, ping_spawn_location_options)
-                    game_state.attempt_spawn(PING, best_location, 1000)
+
+                # We want to send scramblers when they have a huge hole in their defense
+
+                if game_state.turn_number % 4 == 1:
+                    # To simplify we will just check sending them from back left and right (modified to include all possible spawn locations)
+                    ping_spawn_location_options = [[1, 12], [2, 11], [3, 10], [4, 9], [5, 8], [6, 7], [7, 6], [8, 5], [9, 4], [10, 3], [11, 2], [12, 1], [13, 0], \
+                                                    [14, 0], [15, 1], [16, 2], [17, 3], [18, 4], [19, 5], [20, 6], [21, 7], [22, 8], [23, 9], [24, 10], [25, 11], [26, 12]]
+                    best_location, spawnPing = self.least_damage_spawn_location(game_state, ping_spawn_location_options)
+                    if spawnPing:
+                        game_state.attempt_spawn(PING, best_location, 1000)
+                    else:
+                        game_state.attempt_spawn(EMP, best_location, 1000)
 
                 # Lastly, if we have spare cores, let's build some Encryptors to boost our Pings' health.
                 encryptor_locations = [[13, 2], [14, 2], [13, 3], [14, 3]]
@@ -113,7 +120,8 @@ class AlgoStrategy(gamelib.AlgoCore):
         # More community tools available at: https://terminal.c1games.com/rules#Download
 
         # Place destructors that attack enemy units
-        destructor_locations = [[0, 13], [27, 13], [8, 11], [19, 11], [13, 11], [14, 11]]
+        destructor_locations = [[5, 12], [5, 11], [4, 11], [22, 12], [22, 11], [23, 11], [0, 13], \
+                                [27, 13], [8, 11], [19, 11], [13, 11], [14, 11]]
         # attempt_spawn will try to spawn units if we have resources, and will check if a blocking unit is already there
         game_state.attempt_spawn(DESTRUCTOR, destructor_locations)
         
@@ -131,8 +139,10 @@ class AlgoStrategy(gamelib.AlgoCore):
         """
         for location in self.scored_on_locations:
             # Build destructor one space above so that it doesn't block our own edge spawn locations
-            build_location = [location[0], location[1]+1]
-            game_state.attempt_spawn(DESTRUCTOR, build_location)
+            build_location1 = [location[0], location[1]+1]
+            build_location2 = [location[0] + 1, location[1]]
+            game_state.attempt_spawn(DESTRUCTOR, build_location1)
+            game_state.attempt_spawn(DESTRUCTOR, build_location2)
 
     def stall_with_scramblers(self, game_state):
         """
@@ -190,10 +200,19 @@ class AlgoStrategy(gamelib.AlgoCore):
         for location in location_options:
             path = game_state.find_path_to_edge(location)
             damage = 0
-            for path_location in path:
-                # Get number of enemy destructors that can attack the final location and multiply by destructor damage
-                damage += len(game_state.get_attackers(path_location, 0)) * gamelib.GameUnit(DESTRUCTOR, game_state.config).damage_i
+            if path == None: # Area is blocked and can't attack from there
+                damage = float("inf")
+            else:
+                for path_location in path:
+                    # Get number of enemy destructors that can attack the final location and multiply by destructor damage
+                    damage += len(game_state.get_attackers(path_location, 0)) * gamelib.GameUnit(DESTRUCTOR, game_state.config).damage_i
             damages.append(damage)
+
+        best_location = location_options[damages.index(min(damages))]
+        sendPings = True
+        if min(damages) >= 30:
+            sendPings = False
+        return best_location, sendPings
         
         # Now just return the location that takes the least damage
         return location_options[damages.index(min(damages))]
