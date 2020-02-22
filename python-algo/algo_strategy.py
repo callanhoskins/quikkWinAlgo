@@ -76,10 +76,11 @@ class AlgoStrategy(gamelib.AlgoCore):
         For offense we will use long range EMPs if they place stationary units near the enemy's front.
         If there are no stationary units to attack in the front, we will send Pings to try and score quickly.
         """
-        # First, place basic defenses
-        self.build_defences(game_state)
         # Now build reactive defenses based on where the enemy scored
         self.build_reactive_defense(game_state)
+
+        # First, place basic defenses
+        self.build_defences(game_state)
 
         # If the turn is less than 5, stall with Scramblers and wait to see enemy's base
         if game_state.turn_number < 0:
@@ -120,16 +121,23 @@ class AlgoStrategy(gamelib.AlgoCore):
         # More community tools available at: https://terminal.c1games.com/rules#Download
 
         # Place destructors that attack enemy units
-        destructor_locations = [[5, 12], [5, 11], [4, 11], [22, 12], [22, 11], [23, 11], [0, 13], \
-                                [27, 13], [8, 11], [19, 11], [13, 11], [14, 11]]
+        destructor_locations = [[11, 5], [16, 5], [2, 13], [25, 13]]
+
         # attempt_spawn will try to spawn units if we have resources, and will check if a blocking unit is already there
         game_state.attempt_spawn(DESTRUCTOR, destructor_locations)
         
-        # Place filters in front of destructors to soak up damage for them
-        filter_locations = [[8, 12], [19, 12]]
+        # Place filters in a v shape
+        filter_locations = [
+            # left side
+            [0, 13], [1, 13], [2, 13], [4, 13], [3, 12], [4, 11], [5, 10], 
+            [6, 9], [7, 8], [8, 7], [9, 6], [10, 6], [11, 6], 
+            # right side
+            [23, 13], [25, 13], [26, 13], [27, 13], [22, 12], [24, 12], [23, 11], 
+            [22, 10], [21, 9], [20, 8], [19, 7], [18, 6], [17, 6], [16, 6]
+        ]
         game_state.attempt_spawn(FILTER, filter_locations)
         # upgrade filters so they soak more damage
-        game_state.attempt_upgrade(filter_locations)
+        game_state.attempt_upgrade(destructor_locations)
 
     def build_reactive_defense(self, game_state):
         """
