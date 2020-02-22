@@ -19,6 +19,13 @@ Advanced strategy tips:
   the actual current map state.
 """
 
+FILTER_LOCATIONS_ALL = [[0, 13], [1, 13], [26, 13], [27, 13], [5, 12], [12, 12], [14, 12], \
+        [16, 12], [22, 12], [6, 11], [11, 11], [17, 11], [21, 11]]
+
+DESTRUCTOR_LOCATIONS_ALL = [[1, 12], [2, 12], [3, 12], [24, 12], [25, 12], [26, 12], [5, 11], [12, 11], [14, 11], [16, 11], \
+                                [22, 11], [5, 10], [6, 10], [10, 10], [18, 10], [21, 10], [22, 10]]
+ENCRYPTOR_LOCATIONS_ALL = []
+
 class AlgoStrategy(gamelib.AlgoCore):
     def __init__(self):
         super().__init__()
@@ -77,7 +84,7 @@ class AlgoStrategy(gamelib.AlgoCore):
         # First, place basic defenses
         self.build_defences(game_state)
         # Now build reactive defenses based on where the enemy scored
-        self.build_reactive_defense(game_state)
+        # self.build_reactive_defense(game_state)
 
         # If the turn is less than 5, stall with Scramblers and wait to see enemy's base
         if game_state.turn_number < 0:
@@ -118,19 +125,17 @@ class AlgoStrategy(gamelib.AlgoCore):
         # More community tools available at: https://terminal.c1games.com/rules#Download
 
         # Place destructors that attack enemy units
-        # destructor_locations = [[5, 12], [5, 11], [4, 11], [22, 12], [22, 11], [23, 11], [0, 13], \
-        #                         [27, 13], [8, 11], [19, 11], [13, 11], [14, 11]]
-        destructor_locations = [[1, 12], [2, 12], [3, 12], [24, 12], [25, 12], [26, 12], [5, 11], [12, 11], [14, 11], [16, 11], \
-                                [22, 11], [5, 10], [6, 10], [10, 10], [18, 10], [21, 10], [22, 10]]
+        # destructor_locations = [[1, 12], [2, 12], [3, 12], [24, 12], [25, 12], [26, 12], [5, 11], [12, 11], [14, 11], [16, 11], \
+        #                         [22, 11], [5, 10], [6, 10], [10, 10], [18, 10], [21, 10], [22, 10]]
         # attempt_spawn will try to spawn units if we have resources, and will check if a blocking unit is already there
-        game_state.attempt_spawn(DESTRUCTOR, destructor_locations)
+        game_state.attempt_spawn(DESTRUCTOR, DESTRUCTOR_LOCATIONS_ALL)
         
         # Place filters in front of destructors to soak up damage for them
-        filter_locations = [[0, 13], [1, 13], [26, 13], [27, 13], [5, 12], [12, 12], [14, 12], \
-        [16, 12], [22, 12], [6, 11], [11, 11], [17, 11], [21, 11]]
-        game_state.attempt_spawn(FILTER, filter_locations)
+        # filter_locations = [[0, 13], [1, 13], [26, 13], [27, 13], [5, 12], [12, 12], [14, 12], \
+        # [16, 12], [22, 12], [6, 11], [11, 11], [17, 11], [21, 11]]
+        game_state.attempt_spawn(FILTER, FILTER_LOCATIONS_ALL)
         # upgrade filters so they soak more damage
-        game_state.attempt_upgrade(filter_locations)
+        game_state.attempt_upgrade(FILTER_LOCATIONS_ALL)
 
     def build_reactive_defense(self, game_state):
         """
@@ -141,9 +146,17 @@ class AlgoStrategy(gamelib.AlgoCore):
         for location in self.scored_on_locations:
             # Build destructor one space above so that it doesn't block our own edge spawn locations
             build_location1 = [location[0], location[1]+1]
-            build_location2 = [location[0] + 1, location[1]]
+            # build_location2 = [location[0] + 1, location[1]]
             game_state.attempt_spawn(DESTRUCTOR, build_location1)
-            game_state.attempt_spawn(DESTRUCTOR, build_location2)
+            DESTRUCTOR_LOCATIONS_ALL.append(build_location1)
+
+        # for filter_loc in FILTER_LOCATIONS_ALL:
+        #     if game_state.contains_stationary_unit(filter_loc) == False:
+        #         game_state.attempt_spawn(DESTRUCTOR, [filter_loc[0], filter_loc[1] - 1])
+        #         for x in range(filter_loc[0] - 1, filter_loc[0], + 3):
+        #             for y in range(filter_loc[1], filter_loc[1] + 2):
+        #                 game_state.attempt_spawn(FILTER, [x, y])
+        #                 FILTER_LOCATIONS_ALL.append([x, y])
 
     def stall_with_scramblers(self, game_state):
         """
