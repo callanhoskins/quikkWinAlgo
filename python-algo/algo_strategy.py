@@ -109,7 +109,7 @@ class AlgoStrategy(gamelib.AlgoCore):
                         game_state.attempt_spawn(EMP, best_location, 1000)
 
                 # Lastly, if we have spare cores, let's build some Encryptors to boost our Pings' health.
-                encryptor_locations = [[13, 2], [14, 2], [13, 3], [14, 3]]
+                encryptor_locations = [[13, 2], [14, 2]]
                 game_state.attempt_spawn(ENCRYPTOR, encryptor_locations)
 
     def build_defences(self, game_state):
@@ -121,13 +121,13 @@ class AlgoStrategy(gamelib.AlgoCore):
         # More community tools available at: https://terminal.c1games.com/rules#Download
 
         # Place destructors that attack enemy units
-        destructor_locations = [[11, 5], [16, 5], [2, 13], [25, 13]]
+        destructor_locations = [[11, 5], [16, 5], [2, 13], [25, 13], [13, 3], [14, 3]]
 
         # attempt_spawn will try to spawn units if we have resources, and will check if a blocking unit is already there
         game_state.attempt_spawn(DESTRUCTOR, destructor_locations)
         
         # Place filters in a v shape
-        filter_locations = [
+        self.filter_locations = [
             # left side
             [0, 13], [1, 13], [2, 13], [4, 13], [3, 12], [4, 11], [5, 10], 
             [6, 9], [7, 8], [8, 7], [9, 6], [10, 6], [11, 6], 
@@ -135,9 +135,9 @@ class AlgoStrategy(gamelib.AlgoCore):
             [23, 13], [25, 13], [26, 13], [27, 13], [22, 12], [24, 12], [23, 11], 
             [22, 10], [21, 9], [20, 8], [19, 7], [18, 6], [17, 6], [16, 6]
         ]
-        game_state.attempt_spawn(FILTER, filter_locations)
+        game_state.attempt_spawn(FILTER, self.filter_locations)
         # upgrade filters so they soak more damage
-        game_state.attempt_upgrade(destructor_locations)
+        game_state.attempt_upgrade(self.filter_locations)
 
     def build_reactive_defense(self, game_state):
         """
@@ -147,10 +147,14 @@ class AlgoStrategy(gamelib.AlgoCore):
         """
         for location in self.scored_on_locations:
             # Build destructor one space above so that it doesn't block our own edge spawn locations
-            build_location1 = [location[0], location[1]+1]
-            build_location2 = [location[0] + 1, location[1]]
+            build_location1 = [location[0], location[1]-1]
+            build_location2 = [location[0] - 1, location[1]]
             game_state.attempt_spawn(DESTRUCTOR, build_location1)
             game_state.attempt_spawn(DESTRUCTOR, build_location2)
+            for x in range(location[0] - 1, location[0] + 2):
+                for y in range(location[1] + 1, location[1] - 1):
+                    self.filter_locations.append([x, y])
+                    game_stage.attempt_spawn(FILTER, [[x, y]])
 
     def stall_with_scramblers(self, game_state):
         """
